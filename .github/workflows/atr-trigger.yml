@@ -1,0 +1,44 @@
+name: ATR — Create Issue for Claude
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: "Jira issue key (e.g. TW-1234)"
+        required: true
+      jira_title:
+        description: "Jira issue title"
+        required: true
+      jira_url:
+        description: "Jira issue URL"
+        required: false
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create GitHub issue with claude label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jiraKey = '${{ inputs.jira_key }}';
+            const jiraTitle = '${{ inputs.jira_title }}';
+            const jiraUrl = '${{ inputs.jira_url }}';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Fix: ${jiraKey} - ${jiraTitle}`,
+              body: [
+                `## Jira Ticket`,
+                `**Key:** ${jiraKey}`,
+                `**URL:** ${jiraUrl}`,
+                ``,
+                `## Task`,
+                `Please investigate and implement a fix for this issue.`,
+                `The fix should be minimal, targeted, and include a test if applicable.`,
+              ].join('\n'),
+              labels: ['claude']
+            });
