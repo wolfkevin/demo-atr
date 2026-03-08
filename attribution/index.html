@@ -53,16 +53,16 @@
     document.getElementById("conversions").textContent =
       data.conversions.toLocaleString();
 
-    // BUG: division is inverted — should be conversions / impressions
-    const rate = (data.impressions / data.conversions * 100).toFixed(1);
+    // Fixed: correct conversion rate calculation
+    const rate = (data.conversions / data.impressions * 100).toFixed(1);
     document.getElementById("rate").textContent = rate + "%";
 
-    // BUG: delta is calculated as touchpoint - conversion (should be reversed)
+    // Fixed: correct attribution window calculation
     function avgWindowDays(touchpoints, conversion) {
       const conv = new Date(conversion);
       const total = touchpoints.reduce((sum, tp) => {
         const t = new Date(tp);
-        return sum + (t - conv); // wrong direction
+        return sum + (conv - t); // correct direction
       }, 0);
       return Math.round(total / touchpoints.length / 86400000);
     }

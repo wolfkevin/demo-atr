@@ -26,9 +26,8 @@ def is_within_attribution_window(
     touchpoint = datetime.strptime(touchpoint_date, "%Y-%m-%d")
     conversion = datetime.strptime(conversion_date, "%Y-%m-%d")
 
-    # BUG: should be (conversion - touchpoint).days but is reversed,
-    # causing negative deltas to appear valid and positive ones to be rejected
-    delta = (touchpoint - conversion).days
+    # Fixed: correct delta calculation for attribution window
+    delta = (conversion - touchpoint).days
 
     return 0 <= delta <= window_days
 
