@@ -1,2 +1,2 @@
 # demo-atr
-Demo repo for Autonomous Ticket Resolution — Port interview project
+Demo repo for Autonomous Ticket Resolution
