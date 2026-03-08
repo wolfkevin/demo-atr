@@ -19,7 +19,28 @@ jobs:
       - uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          custom_instructions: |
-            After committing your fix, open a pull request using:
-            gh pr create --title "fix: <short description>" --body "<what was fixed and why>"
-            Do not wait for human input — open the PR as the final step.
+      - name: Auto-create PR from Claude's branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          BRANCH=$(git ls-remote --heads origin "claude/issue-${ISSUE_NUMBER}-*" \
+            | awk '{print $2}' | sed 's|refs/heads/||' | tail -1)
+          if [ -z "$BRANCH" ]; then
+            echo "No Claude branch found — skipping PR creation"
+            exit 0
+          fi
+          EXISTING=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "PR already exists: #${EXISTING}"
+            exit 0
+          fi
+          echo "Creating PR from branch: $BRANCH"
+          gh pr create \
+            --title "fix: ${{ github.event.issue.title }}" \
+            --body "Fixes #${ISSUE_NUMBER}
+
+🤖 Generated with [Claude Code](https://claude.ai/code)" \
+            --head "$BRANCH" \
+            --base main
