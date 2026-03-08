@@ -22,12 +22,16 @@ jobs:
       - name: Create GitHub issue with claude label
         uses: actions/github-script@v7
         with:
+          # GH_PAT required so that adding the 'claude' label triggers the
+          # claude-code.yml workflow. GitHub blocks cross-workflow triggers
+          # when using the default GITHUB_TOKEN.
+          github-token: ${{ secrets.GH_PAT || github.token }}
           script: |
             const jiraKey = '${{ inputs.jira_key }}';
             const jiraTitle = '${{ inputs.jira_title }}';
             const jiraUrl = '${{ inputs.jira_url }}';
 
-            await github.rest.issues.create({
+            const issue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Fix: ${jiraKey} - ${jiraTitle}`,
@@ -40,5 +44,14 @@ jobs:
                 `Please investigate and implement a fix for this issue.`,
                 `The fix should be minimal, targeted, and include a test if applicable.`,
               ].join('\n'),
-              labels: ['claude']
             });
+
+            // Add label in a separate call — this is what triggers claude-code.yml
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.data.number,
+              labels: ['claude'],
+            });
+
+            console.log(`Created issue #${issue.data.number}: ${issue.data.html_url}`);
