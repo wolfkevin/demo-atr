@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Attribution Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 40px; }
+    h1 { font-size: 20px; color: #333; margin-bottom: 24px; }
+    .cards { display: flex; gap: 16px; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 200px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .card .label { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .card .value { font-size: 28px; font-weight: 600; color: #111; }
+    .card .value.bad { color: #e53e3e; }
+  </style>
+</head>
+<body>
+  <h1>Attribution Report — Last 30 Days</h1>
+  <div class="cards">
+    <div class="card">
+      <div class="label">Impressions</div>
+      <div class="value" id="impressions">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Conversions</div>
+      <div class="value" id="conversions">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Conversion Rate</div>
+      <div class="value bad" id="rate">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Avg Attribution Window</div>
+      <div class="value bad" id="window">—</div>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+      impressions: 48200,
+      conversions: 1547,
+      touchpointDates: ["2024-01-01", "2024-01-15", "2024-01-20"],
+      conversionDate: "2024-01-30"
+    };
+
+    document.getElementById("impressions").textContent =
+      data.impressions.toLocaleString();
+    document.getElementById("conversions").textContent =
+      data.conversions.toLocaleString();
+
+    // BUG: division is inverted — should be conversions / impressions
+    const rate = (data.impressions / data.conversions * 100).toFixed(1);
+    document.getElementById("rate").textContent = rate + "%";
+
+    // BUG: delta is calculated as touchpoint - conversion (should be reversed)
+    function avgWindowDays(touchpoints, conversion) {
+      const conv = new Date(conversion);
+      const total = touchpoints.reduce((sum, tp) => {
+        const t = new Date(tp);
+        return sum + (t - conv); // wrong direction
+      }, 0);
+      return Math.round(total / touchpoints.length / 86400000);
+    }
+
+    const window = avgWindowDays(data.touchpointDates, data.conversionDate);
+    document.getElementById("window").textContent = window + " days";
+  </script>
+</body>
+</html>
