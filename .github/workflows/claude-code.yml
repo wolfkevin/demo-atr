@@ -19,3 +19,7 @@ jobs:
       - uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          custom_instructions: |
+            After committing your fix, open a pull request using:
+            gh pr create --title "fix: <short description>" --body "<what was fixed and why>"
+            Do not wait for human input — open the PR as the final step.
