@@ -1,0 +1,19 @@
+name: Claude Code — Autonomous Ticket Resolution
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  claude-fix:
+    # Fires when Port creates a GitHub issue and adds the "claude" label
+    if: github.event.label.name == 'claude'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
