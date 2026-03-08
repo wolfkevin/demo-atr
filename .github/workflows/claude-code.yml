@@ -39,8 +39,6 @@ jobs:
           echo "Creating PR from branch: $BRANCH"
           gh pr create \
             --title "fix: ${{ github.event.issue.title }}" \
-            --body "Fixes #${ISSUE_NUMBER}
-
-🤖 Generated with [Claude Code](https://claude.ai/code)" \
+            --body "Fixes #${ISSUE_NUMBER} - 🤖 Generated with Claude Code" \
             --head "$BRANCH" \
             --base main
