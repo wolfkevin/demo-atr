@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test: Recategorization Banner</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; background: #f0f0f0; }
+    .test-case { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; }
+    .test-result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+    .pass { background: #dcfce7; color: #166534; }
+    .fail { background: #fecaca; color: #dc2626; }
+    iframe { border: 1px solid #ddd; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Test: Custom Categories Banner Display</h1>
+  
+  <div class="test-case">
+    <h3>Test Case: Banner should show when dirty pills are present</h3>
+    <p>Expected: Banner visible (the custom_categories.html page has 3 "Changes pending" pills)</p>
+    
+    <iframe src="custom_categories.html" width="800" height="400"></iframe>
+    
+    <div id="testResult" class="test-result">
+      <strong>Test Status:</strong> <span id="status">Running...</span>
+    </div>
+  </div>
+
+  <script>
+    // Simple test to verify the banner logic
+    setTimeout(() => {
+      const iframe = document.querySelector('iframe');
+      const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+      
+      // Check if the banner is visible in the iframe
+      const banner = iframeDocument.getElementById('recategorizeBanner');
+      const isDirty = iframeDocument.querySelectorAll('.dirty-pill').length > 0;
+      const bannerVisible = window.getComputedStyle(banner).display === 'flex';
+      
+      const statusSpan = document.getElementById('status');
+      const resultDiv = document.getElementById('testResult');
+      
+      if (isDirty && bannerVisible) {
+        statusSpan.textContent = 'PASS - Banner is correctly shown when changes are pending';
+        resultDiv.className = 'test-result pass';
+      } else if (!isDirty && !bannerVisible) {
+        statusSpan.textContent = 'PASS - Banner is correctly hidden when no changes are pending';
+        resultDiv.className = 'test-result pass';
+      } else {
+        statusSpan.textContent = `FAIL - Expected banner visible: ${isDirty}, actual: ${bannerVisible}`;
+        resultDiv.className = 'test-result fail';
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
