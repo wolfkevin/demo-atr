@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Categories — Triple Whale</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 24px; color: #1a1a1a; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+
+    /* BUG: banner is display:none even when recategorization is needed */
+    .recategorize-banner {
+      display: none; /* ← BUG: should be display:flex when isDirty=true */
+      align-items: center;
+      gap: 12px;
+      background: #fff8e1;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .recategorize-banner .icon { font-size: 18px; }
+    .recategorize-banner button {
+      margin-left: auto;
+      background: #f59e0b;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .category-card { background: white; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .category-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .category-name { font-weight: 600; font-size: 15px; }
+    .dirty-pill { background: #fee2e2; color: #dc2626; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+    .campaigns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .campaign-tag { background: #f0f0f0; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #444; }
+    .campaign-tag.new { background: #dbeafe; color: #1d4ed8; }
+
+    .status-bar { display: flex; gap: 16px; margin-bottom: 20px; }
+    .stat { background: white; border-radius: 8px; padding: 12px 16px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .stat-value { font-size: 20px; font-weight: 700; }
+    .stat-value.warning { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Custom Categories</h1>
+    <p class="subtitle">Organize your campaigns into meaningful groups for MMM attribution.</p>
+
+    <!-- BUG: This banner never renders because isDirty check is missing — CSS has display:none hardcoded -->
+    <!-- Expected behavior: when any category has unsaved campaign edits, show this banner -->
+    <div class="recategorize-banner" id="recategorizeBanner">
+      <span class="icon">⚠️</span>
+      <span><strong>Recategorization required.</strong> You've made changes that affect attribution. Re-run to update your model.</span>
+      <button onclick="runRecategorization()">Recategorize Now</button>
+    </div>
+
+    <div class="status-bar">
+      <div class="stat">
+        <div class="stat-label">Categories</div>
+        <div class="stat-value">4</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Pending Changes</div>
+        <div class="stat-value warning">3</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Last Recategorized</div>
+        <div class="stat-value">48h ago</div>
+      </div>
+    </div>
+
+    <div class="category-card">
+      <div class="category-header">
+        <div class="category-name">Paid Social</div>
+        <span class="dirty-pill">Changes pending</span>
+      </div>
+      <div class="campaigns">
+        <span class="campaign-tag">Facebook — Brand Awareness Q1</span>
+        <span class="campaign-tag">Instagram — Retargeting</span>
+        <span class="campaign-tag new">TikTok — FABO Spring 2025 ✦ new</span>
+      </div>
+    </div>
+
+    <div class="category-card">
+      <div class="category-header">
+        <div class="category-name">Paid Search</div>
+        <span class="dirty-pill">Changes pending</span>
+      </div>
+      <div class="campaigns">
+        <span class="campaign-tag">Google — Brand Keywords</span>
+        <span class="campaign-tag new">Google — Competitor Conquesting ✦ new</span>
+      </div>
+    </div>
+
+    <div class="category-card">
+      <div class="category-header">
+        <div class="category-name">Email</div>
+      </div>
+      <div class="campaigns">
+        <span class="campaign-tag">Klaviyo — Welcome Series</span>
+        <span class="campaign-tag">Klaviyo — Winback</span>
+      </div>
+    </div>
+
+    <div class="category-card">
+      <div class="category-header">
+        <div class="category-name">Influencer</div>
+        <span class="dirty-pill">Changes pending</span>
+      </div>
+      <div class="campaigns">
+        <span class="campaign-tag">Triple Whale Ambassador Program</span>
+        <span class="campaign-tag new">YouTube — Product Review Seeding ✦ new</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function runRecategorization() {
+      alert('Recategorization started. This may take a few minutes.');
+    }
+
+    // BUG: isDirty is correctly computed as true, but banner is never shown
+    // because the CSS has display:none hardcoded instead of being toggled here
+    const isDirty = document.querySelectorAll('.dirty-pill').length > 0;
+    console.log('isDirty:', isDirty); // logs true — but banner stays hidden
+    // Missing: document.getElementById('recategorizeBanner').style.display = isDirty ? 'flex' : 'none';
+  </script>
+</body>
+</html>
