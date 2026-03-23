@@ -127,11 +127,10 @@
       alert('Recategorization started. This may take a few minutes.');
     }
 
-    // BUG: isDirty is correctly computed as true, but banner is never shown
-    // because the CSS has display:none hardcoded instead of being toggled here
+    // Check if any categories have pending changes and show/hide banner accordingly
     const isDirty = document.querySelectorAll('.dirty-pill').length > 0;
-    console.log('isDirty:', isDirty); // logs true — but banner stays hidden
-    // Missing: document.getElementById('recategorizeBanner').style.display = isDirty ? 'flex' : 'none';
+    console.log('isDirty:', isDirty);
+    document.getElementById('recategorizeBanner').style.display = isDirty ? 'flex' : 'none';
   </script>
 </body>
 </html>
