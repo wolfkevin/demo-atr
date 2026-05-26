@@ -23,7 +23,7 @@ jobs:
       ORG_NAME: wolfkevin
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Extract runId from port_context
         run: |
