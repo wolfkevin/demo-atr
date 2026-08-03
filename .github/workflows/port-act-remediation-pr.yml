@@ -59,6 +59,24 @@ jobs:
             for hub ${{ inputs.hub_identifier }}:
             ${{ inputs.recommended_action }}
 
+      - name: Load hub title and origin from Port
+        env:
+          PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
+          PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sS -X POST "https://api.getport.io/v1/auth/access_token" \
+            -H "Content-Type: application/json" \
+            -d "{\"clientId\":\"$PORT_CLIENT_ID\",\"clientSecret\":\"$PORT_CLIENT_SECRET\"}" | jq -r .accessToken)
+          HUB=$(curl -sS "https://api.getport.io/v1/blueprints/incident/entities/${{ inputs.hub_identifier }}" \
+            -H "Authorization: Bearer $TOKEN")
+          TITLE=$(echo "$HUB" | jq -r '.entity.title // empty')
+          ORIGIN_URL=$(echo "$HUB" | jq -r '.entity.properties.origin_url // empty')
+          ORIGIN_ID=$(echo "$HUB" | jq -r '.entity.properties.origin_id // empty')
+          echo "HUB_TITLE=$TITLE" >> "$GITHUB_ENV"
+          echo "ORIGIN_URL=$ORIGIN_URL" >> "$GITHUB_ENV"
+          echo "ORIGIN_ID=$ORIGIN_ID" >> "$GITHUB_ENV"
+
       - name: Checkout target service
         uses: actions/checkout@v6
         with:
@@ -84,11 +102,11 @@ jobs:
             echo
             echo "**Recommended action:** ${{ inputs.recommended_action }}"
             echo
-            echo "**Incident:** ${{ inputs.incident_title }}"
+            echo "**Incident:** ${{ env.HUB_TITLE }}"
             echo
             echo "**Port hub:** ${{ inputs.hub_url }}"
             echo
-            echo "**Origin:** ${{ inputs.origin_url }}"
+            echo "**Origin:** ${{ env.ORIGIN_URL }}"
             echo
             echo "This file is a thin-slice Act stub opened by Port after Recommend."
             echo "Replace with a real remediation change in a full demo."
@@ -109,7 +127,7 @@ jobs:
 
           - **Hub:** [\`${{ inputs.hub_identifier }}\`](${{ inputs.hub_url }})
           - **Recommended action:** ${{ inputs.recommended_action }}
-          - **Origin:** ${{ inputs.origin_url }}
+          - **Origin:** ${{ env.ORIGIN_URL }}
 
           Stub remediation file: \`$FILE\`")
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
@@ -130,6 +148,22 @@ jobs:
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"properties\":{\"ddral_stage\":\"act\",\"acted_at\":\"$NOW\",\"act_pr_url\":\"$PR_URL\"}}"
+
+
+      - name: Notify incident.io Action (best effort)
+        env:
+          INCIDENT_IO_API_KEY: ${{ secrets.INCIDENT_IO_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${INCIDENT_IO_API_KEY:-}" ] || [ -z "${ORIGIN_ID:-}" ]; then
+            echo "Skip incident.io notify (missing secret or origin_id)"
+            exit 0
+          fi
+          curl -sS -X POST "https://api.incident.io/v2/actions" \
+            -H "Authorization: Bearer $INCIDENT_IO_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"incident_id\":\"$ORIGIN_ID\",\"status\":\"outstanding\",\"description\":\"Port Act opened remediation PR: $PR_URL\"}" \
+            || echo "incident.io notify failed (non-blocking)"
 
       - name: Log PR URL to Port run
         uses: port-labs/port-github-action@v1
