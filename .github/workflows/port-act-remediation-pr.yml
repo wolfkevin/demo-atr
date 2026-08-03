@@ -1,0 +1,143 @@
+name: Port Act remediation PR
+
+# Dispatched from Port self-serve workflow act_incident_hub (github-ocean).
+# Opens a stub remediation PR on wolfkevin/port-demo-service and advances the hub to act.
+
+on:
+  workflow_dispatch:
+    inputs:
+      hub_identifier:
+        required: true
+        description: Port incident hub identifier (inc_…)
+        type: string
+      recommended_action:
+        required: true
+        description: Confirmed remediation label from Recommend
+        type: string
+      incident_title:
+        required: false
+        description: Hub title for PR body
+        type: string
+      origin_url:
+        required: false
+        description: incident.io (or SoR) URL
+        type: string
+      hub_url:
+        required: false
+        description: Port hub deep link
+        type: string
+      port_context:
+        required: true
+        description: JSON with runId from Port
+        type: string
+
+jobs:
+  open-remediation-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TARGET_ORG: wolfkevin
+      TARGET_REPO: port-demo-service
+
+    steps:
+      - name: Extract Port run id
+        run: |
+          echo "PORT_RUN_ID=$(echo '${{ inputs.port_context }}' | jq -r .runId)" >> "$GITHUB_ENV"
+          echo "BRANCH=port-act/${{ inputs.hub_identifier }}-$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+
+      - name: Log start to Port run
+        uses: port-labs/port-github-action@v1
+        with:
+          clientId: ${{ secrets.PORT_CLIENT_ID }}
+          clientSecret: ${{ secrets.PORT_CLIENT_SECRET }}
+          baseUrl: https://api.port.io
+          operation: PATCH_RUN
+          runId: ${{ env.PORT_RUN_ID }}
+          logMessage: >-
+            Opening remediation PR on ${{ env.TARGET_ORG }}/${{ env.TARGET_REPO }}
+            for hub ${{ inputs.hub_identifier }}:
+            ${{ inputs.recommended_action }}
+
+      - name: Checkout target service
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.TARGET_ORG }}/${{ env.TARGET_REPO }}
+          token: ${{ secrets.ORG_ADMIN_TOKEN }}
+          ref: main
+
+      - name: Create branch, commit stub, open PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "port-act-bot"
+          git config user.email "port-act-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+
+          mkdir -p docs/port-act
+          SAFE_ID=$(printf '%s' '${{ inputs.hub_identifier }}' | tr '/:' '__')
+          FILE="docs/port-act/${SAFE_ID}.md"
+          {
+            echo "# Port Act stub — ${{ inputs.hub_identifier }}"
+            echo
+            echo "**Recommended action:** ${{ inputs.recommended_action }}"
+            echo
+            echo "**Incident:** ${{ inputs.incident_title }}"
+            echo
+            echo "**Port hub:** ${{ inputs.hub_url }}"
+            echo
+            echo "**Origin:** ${{ inputs.origin_url }}"
+            echo
+            echo "This file is a thin-slice Act stub opened by Port after Recommend."
+            echo "Replace with a real remediation change in a full demo."
+          } > "$FILE"
+
+          git add "$FILE"
+          git commit -m "chore(act): stub remediation for ${{ inputs.hub_identifier }}
+
+          ${{ inputs.recommended_action }}"
+          git push -u origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --repo "${TARGET_ORG}/${TARGET_REPO}" \
+            --base main \
+            --head "$BRANCH" \
+            --title "Act: ${{ inputs.recommended_action }}" \
+            --body "## Port Act (gated)
+
+          - **Hub:** [\`${{ inputs.hub_identifier }}\`](${{ inputs.hub_url }})
+          - **Recommended action:** ${{ inputs.recommended_action }}
+          - **Origin:** ${{ inputs.origin_url }}
+
+          Stub remediation file: \`$FILE\`")
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "Opened $PR_URL"
+
+      - name: Advance hub to act + store PR URL
+        env:
+          PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
+          PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sS -X POST "https://api.getport.io/v1/auth/access_token" \
+            -H "Content-Type: application/json" \
+            -d "{\"clientId\":\"$PORT_CLIENT_ID\",\"clientSecret\":\"$PORT_CLIENT_SECRET\"}" | jq -r .accessToken)
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          curl -sS -X PATCH "https://api.getport.io/v1/blueprints/incident/entities/${{ inputs.hub_identifier }}" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"properties\":{\"ddral_stage\":\"act\",\"acted_at\":\"$NOW\",\"act_pr_url\":\"$PR_URL\"}}"
+
+      - name: Log PR URL to Port run
+        uses: port-labs/port-github-action@v1
+        with:
+          clientId: ${{ secrets.PORT_CLIENT_ID }}
+          clientSecret: ${{ secrets.PORT_CLIENT_SECRET }}
+          baseUrl: https://api.port.io
+          operation: PATCH_RUN
+          runId: ${{ env.PORT_RUN_ID }}
+          logMessage: >-
+            Remediation PR opened: ${{ env.PR_URL }}. Hub advanced to act.
