@@ -17,6 +17,54 @@
     .card .label { font-size: 12px; color: #888; margin-bottom: 8px; }
     .card .value { font-size: 28px; font-weight: 600; color: #111; }
     .card .value.good { color: #16a34a; }
+    
+    .channel-breakdown {
+      margin-top: 32px;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .channel-breakdown h2 {
+      font-size: 16px;
+      color: #333;
+      margin: 0 0 20px 0;
+      font-weight: 600;
+    }
+    .channel-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .channel-table th,
+    .channel-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .channel-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .channel-table td {
+      font-size: 14px;
+      color: #111827;
+    }
+    .channel-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    .channel-name {
+      font-weight: 500;
+    }
+    .metric-value {
+      font-weight: 600;
+    }
+    .rate-good { color: #16a34a; }
+    .rate-fair { color: #d97706; }
+    .rate-poor { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -40,12 +88,56 @@
     </div>
   </div>
 
+  <div class="channel-breakdown">
+    <h2>Channel Performance Breakdown</h2>
+    <table class="channel-table">
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Impressions</th>
+          <th>Conversions</th>
+          <th>Conv. Rate</th>
+          <th>Avg Window (Days)</th>
+        </tr>
+      </thead>
+      <tbody id="channel-breakdown-body">
+        <!-- Channel data will be populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
   <script>
     const data = {
       impressions: 48200,
       conversions: 1547,
       touchpointDates: ["2024-01-01", "2024-01-15", "2024-01-20"],
-      conversionDate: "2024-01-30"
+      conversionDate: "2024-01-30",
+      channels: [
+        {
+          name: "Paid Social",
+          impressions: 15600,
+          conversions: 542,
+          touchpointDates: ["2024-01-05", "2024-01-18", "2024-01-25"]
+        },
+        {
+          name: "Paid Search", 
+          impressions: 18200,
+          conversions: 623,
+          touchpointDates: ["2024-01-02", "2024-01-12", "2024-01-22"]
+        },
+        {
+          name: "Email",
+          impressions: 8400,
+          conversions: 245,
+          touchpointDates: ["2024-01-08", "2024-01-20"]
+        },
+        {
+          name: "Influencer",
+          impressions: 6000,
+          conversions: 137,
+          touchpointDates: ["2024-01-10", "2024-01-28"]
+        }
+      ]
     };
 
     document.getElementById("impressions").textContent =
@@ -67,6 +159,35 @@
 
     const window = avgWindowDays(data.touchpointDates, data.conversionDate);
     document.getElementById("window").textContent = window + " days";
+
+    // Populate channel breakdown table
+    function populateChannelBreakdown() {
+      const tbody = document.getElementById("channel-breakdown-body");
+      
+      data.channels.forEach(channel => {
+        const rate = (channel.conversions / channel.impressions * 100);
+        const avgWindow = avgWindowDays(channel.touchpointDates, data.conversionDate);
+        
+        const row = document.createElement("tr");
+        
+        // Determine rate styling
+        let rateClass = "rate-poor";
+        if (rate >= 3.0) rateClass = "rate-good";
+        else if (rate >= 2.0) rateClass = "rate-fair";
+        
+        row.innerHTML = `
+          <td class="channel-name">${channel.name}</td>
+          <td class="metric-value">${channel.impressions.toLocaleString()}</td>
+          <td class="metric-value">${channel.conversions.toLocaleString()}</td>
+          <td class="metric-value ${rateClass}">${rate.toFixed(1)}%</td>
+          <td class="metric-value">${avgWindow} days</td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    populateChannelBreakdown();
   </script>
 </body>
 </html>
